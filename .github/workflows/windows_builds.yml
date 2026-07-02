@@ -4,17 +4,40 @@ on:
   workflow_dispatch:
     inputs:
       godot_ref:
-        description: 'Godot ref (tag/branch/commit). Example: 4.6-stable'
+        description: 'Godot ref (tag/branch/commit). Example: 4.7-stable'
         required: false
         type: string
-        default: '4.6-stable'
-
+        default: '4.7-stable'
+        
+      debug_symbols:
+        description: 'Include debug symbols'
+        required: false
+        type: choice
+        default: 'yes'
+        options:
+          - 'no'
+          - 'yes'
+        
+      dev_build:
+        description: 'Developer build with dev-only debugging code (DEV_ENABLED)'
+        required: false
+        type: choice
+        default: 'yes'
+        options:
+          - 'no'
+          - 'yes'
+          
+      production:
+        description: 'production=yes Set defaults to build Godot for use in production'
+        required: false
+        type: boolean
+        default: false
+        
       console_subsystem:
         description: 'If enabled: pass windows_subsystem=console (single EXE with console). If disabled (default): build produces two EXEs (normal + .console).'
         required: false
         type: boolean
         default: false
-
       build_x86_32:
         description: 'Build x86_32 (32-bit)'
         required: false
@@ -36,27 +59,7 @@ on:
         required: false
         type: boolean
         default: false
-
-      production:
-        description: 'production=yes'
-        required: false
-        type: boolean
-        default: false
         
-      dev_build:
-        description: 'Developer build with dev-only debugging code (DEV_ENABLED)'
-        required: false
-        type: choice
-        default: 'debug'
-        options:
-          - 'none'
-          - 'auto'
-          - 'custom'
-          - 'debug'
-          - 'speed'
-          - 'speed_trace'
-          - 'size'
-          - 'size_extra'
       lto:
         description: 'LTO mode (thin requires LLVM).'
         required: false
@@ -77,16 +80,7 @@ on:
           - 'speed'
           - 'size'
           - 'size_extra'
-
-      debug_symbols:
-        description: 'Include debug symbols'
-        required: false
-        type: choice
-        default: 'yes'
-        options:
-          - 'no'
-          - 'yes'
-
+          
 env:
   PYTHONIOENCODING: utf8
   SCONS_CACHE_MSVC_CONFIG: true
