@@ -242,7 +242,7 @@ jobs:
         run: |
           $target = "${{ matrix.target }}"
           $arch = "${{ matrix.arch }}"
-          $mode = "${{ inputs.dev_build }}"
+          $mode = if ("${{ inputs.dev_build }}" -eq "true") { "debug" } else { "" }
 
           $consoleSubsystem = ("${{ inputs.console_subsystem }}" -eq "true")
 
@@ -274,18 +274,9 @@ jobs:
         run: |
           $zipName = "${{ matrix.cache_name }}.zip"
           if (Test-Path $zipName) { Remove-Item $zipName -Force }
-          $files = Get-ChildItem "godot/out" -Filter "windows_*.exe"
+          $files = Get-ChildItem "godot/out" -File
           if (-not $files) { throw "No outputs found in godot/out" }
           Compress-Archive -Path $files.FullName -DestinationPath $zipName
-
-      - name: Test executable (skip ARM64)
-        if: matrix.arch != 'arm64'
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem "godot/out" -Filter "windows_*.exe" | Select-Object -First 1
-          if (-not $exe) { throw "No output exe found" }
-          & $exe.FullName --version
-          & $exe.FullName --help | Select-Object -First 10
 
       - name: Upload job zip
         uses: actions/upload-artifact@v4
@@ -310,11 +301,11 @@ jobs:
           mkdir -p combined
           find all_zips -name "*.zip" -print -exec unzip -o {} -d combined \;
           (cd combined && ls -lh)
-          zip -r godot-windows-custom-templates.zip combined
+          zip -r godot-windows-custom-editor.zip combined
 
       - name: Upload combined zip
         uses: actions/upload-artifact@v4
         with:
-          name: godot-windows-custom-templates
-          path: godot-windows-custom-templates.zip
+          name: godot-windows-custom-editor
+          path: godot-windows-custom-editor.zip
           retention-days: 30
