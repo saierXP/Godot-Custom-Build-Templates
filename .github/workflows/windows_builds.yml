@@ -232,6 +232,7 @@ jobs:
             lto=${{ inputs.lto }} ^
             production=${{ inputs.production && 'yes' || 'no' }} ^
             accesskit=no ^
+            angle=no ^
             %USE_LLVM_FLAG% ^
             %WS_FLAG% ^
             -j4
