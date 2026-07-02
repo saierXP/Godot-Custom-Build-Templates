@@ -1,4 +1,4 @@
-name: 🏁 Build Custom Godot Templates (Windows)
+name: 🏁 Build Custom Godot Editor (Windows)
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
         description: 'Build x86_32 (32-bit)'
         required: false
         type: boolean
-        default: true
+        default: false
       build_x86_64:
         description: 'Build x86_64 (64-bit)'
         required: false
@@ -29,20 +29,34 @@ on:
         description: 'Build ARM64'
         required: false
         type: boolean
-        default: true
+        default: false
 
       enable_d3d12:
         description: 'Enable Direct3D 12 (installs deps). If unchecked, d3d12=no is forced.'
         required: false
         type: boolean
-        default: true
+        default: false
 
       production:
         description: 'production=yes'
         required: false
         type: boolean
         default: false
-
+        
+      dev_build:
+        description: 'Developer build with dev-only debugging code (DEV_ENABLED)'
+        required: false
+        type: choice
+        default: 'debug'
+        options:
+          - 'none'
+          - 'auto'
+          - 'custom'
+          - 'debug'
+          - 'speed'
+          - 'speed_trace'
+          - 'size'
+          - 'size_extra'
       lto:
         description: 'LTO mode (thin requires LLVM).'
         required: false
@@ -68,7 +82,7 @@ on:
         description: 'Include debug symbols'
         required: false
         type: choice
-        default: 'no'
+        default: 'yes'
         options:
           - 'no'
           - 'yes'
@@ -98,7 +112,7 @@ jobs:
 
           json='{"include":[]}'
           for a in "${archs[@]}"; do
-            for t in template_debug template_release; do
+            for t in editor; do
               json=$(echo "$json" | jq -c --arg a "$a" --arg t "$t" \
                 '.include += [{"arch":$a,"target":$t,"cache_name":("windows-" + $t + "-" + $a)}]')
             done
@@ -217,7 +231,7 @@ jobs:
             p=windows ^
             target=${{ matrix.target }} ^
             arch=${{ matrix.arch }} ^
-            build_profile=sanitized_build.gdbuild ^
+            dev_build=${{ inputs.dev_build }} ^
             d3d12=${{ steps.d3d12mode.outputs.D3D12_MODE }} ^
             debug_symbols=${{ inputs.debug_symbols }} ^
             optimize=${{ inputs.optimize }} ^
@@ -232,7 +246,7 @@ jobs:
         run: |
           $target = "${{ matrix.target }}"
           $arch = "${{ matrix.arch }}"
-          $mode = if ($target -eq "template_debug") { "debug" } else { "release" }
+          $mode = "${{ inputs.dev_build }}"
 
           $consoleSubsystem = ("${{ inputs.console_subsystem }}" -eq "true")
 
