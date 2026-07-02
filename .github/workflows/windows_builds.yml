@@ -237,44 +237,12 @@ jobs:
             %WS_FLAG% ^
             -j4
 
-      - name: Rename outputs to requested format
-        shell: pwsh
-        run: |
-          $target = "${{ matrix.target }}"
-          $arch = "${{ matrix.arch }}"
-          $mode = if ("${{ inputs.dev_build }}" -eq "true") { "debug" } else { "" }
-
-          $consoleSubsystem = ("${{ inputs.console_subsystem }}" -eq "true")
-
-          $outDir = Join-Path "godot" "out"
-          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-
-          $binDir = Join-Path "godot" "bin"
-          $exes = Get-ChildItem $binDir -Filter "*.exe"
-          if (-not $exes) { throw "No .exe files found in godot/bin" }
-
-          if ($consoleSubsystem) {
-            $exe = $exes | Select-Object -First 1
-            Copy-Item $exe.FullName (Join-Path $outDir "windows_${mode}_${arch}.exe") -Force
-          } else {
-            $normal = $exes | Where-Object { $_.Name -notmatch '\.console\.exe$' } | Select-Object -First 1
-            $console = $exes | Where-Object { $_.Name -match '\.console\.exe$' } | Select-Object -First 1
-            if (-not $normal -or -not $console) {
-              Write-Host "Found exes:"
-              $exes | ForEach-Object { Write-Host " - $($_.Name)" }
-              throw "Expected normal + *.console.exe outputs when console_subsystem=false"
-            }
-
-            Copy-Item $normal.FullName (Join-Path $outDir "windows_${mode}_${arch}.exe") -Force
-            Copy-Item $console.FullName (Join-Path $outDir "windows_${mode}_${arch}_console.exe") -Force
-          }
-
       - name: Zip outputs (this job)
         shell: pwsh
         run: |
           $zipName = "${{ matrix.cache_name }}.zip"
           if (Test-Path $zipName) { Remove-Item $zipName -Force }
-          $files = Get-ChildItem "godot/out" -File
+          $files = Get-ChildItem "godot/bin" -File
           if (-not $files) { throw "No outputs found in godot/out" }
           Compress-Archive -Path $files.FullName -DestinationPath $zipName
 
@@ -285,27 +253,3 @@ jobs:
           path: ${{ matrix.cache_name }}.zip
           retention-days: 7
           if-no-files-found: error
-
-  combine:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: all_zips
-
-      - name: Combine into one zip
-        run: |
-          set -euo pipefail
-          mkdir -p combined
-          find all_zips -name "*.zip" -print -exec unzip -o {} -d combined \;
-          (cd combined && ls -lh)
-          zip -r godot-windows-custom-editor.zip combined
-
-      - name: Upload combined zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: godot-windows-custom-editor
-          path: godot-windows-custom-editor.zip
-          retention-days: 30
